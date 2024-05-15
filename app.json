@@ -1,0 +1,40 @@
+{
+  "id": "67e71e8d-6091-4f2a-bcb8-885993c4b181",
+  "name": "ALProject18",
+  "publisher": "Default Publisher",
+  "version": "1.0.0.0",
+  "brief": "",
+  "description": "",
+  "privacyStatement": "",
+  "EULA": "",
+  "help": "",
+  "url": "",
+  "logo": "",
+  "dependencies": [
+    {
+      "id": "ba2fb913-2300-45f2-9f40-ca453112f982",
+      "name": "OnBoarding",
+      "publisher": "EOS Online",
+      "version": "24.0.16410.2"
+    }
+  ],
+  "screenshots": [],
+  "platform": "1.0.0.0",
+  "application": "24.0.0.0",
+  "idRanges": [
+    {
+      "from": 69000,
+      "to": 69999
+    }
+  ],
+  "resourceExposurePolicy": {
+    "allowDebugging": true,
+    "allowDownloadingSource": true,
+    "includeSourceInSymbolFile": true
+  },
+  "runtime": "13.0",
+  "features": [
+    "NoImplicitWith"
+  ],
+  "target": "OnPrem"
+}
