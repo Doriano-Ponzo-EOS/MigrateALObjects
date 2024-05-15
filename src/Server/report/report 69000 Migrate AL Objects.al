@@ -231,6 +231,7 @@ report 69000 "Migrate AL Objects"
             StringsToFind.Add('REPORT::');
             StringsToFind.Add('RunObject = report');
             StringsToFind.Add('RunObject = Report');
+            StringsToFind.Add('dataitem(');
             foreach StringToFind in StringsToFind do begin
                 if NewTxt.Contains(StringToFind) then begin
                     ALObjectMigrationBuffer.Reset();
@@ -244,6 +245,7 @@ report 69000 "Migrate AL Objects"
             StringsToFind.Add('; enum ');
             StringsToFind.Add('; Enum ');
             StringsToFind.Add('Enum::');
+            StringsToFind.Add(': enum ');
             foreach StringToFind in StringsToFind do begin
                 if NewTxt.Contains(StringToFind) then begin
                     ALObjectMigrationBuffer.Reset();
