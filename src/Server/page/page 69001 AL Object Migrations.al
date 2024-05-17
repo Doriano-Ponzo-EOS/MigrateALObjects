@@ -27,6 +27,9 @@ page 69001 "AL Object Migrations"
                 field("To Object Name"; Rec."To Object Name")
                 {
                 }
+                field(Appsource; Rec.Appsource)
+                {
+                }
             }
         }
     }

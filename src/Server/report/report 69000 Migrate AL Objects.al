@@ -18,10 +18,21 @@ report 69000 "Migrate AL Objects"
                         ApplicationArea = All;
                         Caption = 'Folder Path';
                     }
-                    field(ReplaceObjects; ReplaceObjects)
+
+                    field(MigrateAppsourceObjects; MigrateAppsourceObjects)
                     {
                         ApplicationArea = All;
-                        Caption = 'Replace Objects';
+                        Caption = 'Migrate Appsource Objects';
+                    }
+                    field(RemoveAppsourceObjects; RemoveAppsourceObjects)
+                    {
+                        ApplicationArea = All;
+                        Caption = 'Remove Appsource Objects';
+                    }
+                    field(RemoveNotAppsuorceObjects; RemoveNotAppsuorceObjects)
+                    {
+                        ApplicationArea = All;
+                        Caption = 'Remove Not Appsource Objects';
                     }
                 }
             }
@@ -57,6 +68,8 @@ report 69000 "Migrate AL Objects"
         LineCount: Integer;
         FromFileName: Text;
         ToFileName: Text;
+        Appsource: Boolean;
+        AppsourceObject: Boolean;
         Text001Msg: Label 'Processing %1 of %2';
     begin
         TempNameValueBuffer.Reset();
@@ -71,6 +84,7 @@ report 69000 "Migrate AL Objects"
                 Clear(IStream);
                 Clear(OStream);
                 Clear(LineCount);
+                Clear(AppsourceObject);
 
                 FileCount += 1;
                 if GuiAllowed then
@@ -84,22 +98,33 @@ report 69000 "Migrate AL Objects"
                     ALFile2.CreateOutStream(OStream);
 
                     ALFile.CreateInStream(IStream);
-                    // Starting a loop  
+
                     while not (IStream.EOS) do begin
                         LineCount += 1;
                         IStream.ReadText(Txt);
-                        NewTxt := ProcessLine(Txt, LineCount);
+                        NewTxt := ProcessLine(Txt, LineCount, Appsource);
+                        if LineCount = 1 then
+                            AppsourceObject := Appsource;
                         OStream.WriteText(NewTxt);
                         OStream.WriteText();
                     end;
+
                     FromFileName := ALFile2.Name;
                     ToFileName := ALFile.Name;
                     ALFile2.Close();
                     ALFile.Close();
-                    if ReplaceObjects then begin
-                        File.Copy(FromFileName, ToFileName);
-                        File.Erase(FromFileName);
+
+                    if AppsourceObject then begin
+                        if MigrateAppsourceObjects then
+                            File.Copy(FromFileName, ToFileName);
+                        if RemoveAppsourceObjects then
+                            File.Erase(ToFileName);
+                    end else begin
+                        if RemoveNotAppsuorceObjects then
+                            File.Erase(ToFileName);
                     end;
+
+                    File.Erase(FromFileName);
                 end;
             until TempNameValueBuffer.Next() = 0;
             if GuiAllowed then
@@ -109,9 +134,11 @@ report 69000 "Migrate AL Objects"
 
     var
         FolderPath: Text[250];
-        ReplaceObjects: Boolean;
+        MigrateAppsourceObjects: Boolean;
+        RemoveAppsourceObjects: Boolean;
+        RemoveNotAppsuorceObjects: Boolean;
 
-    procedure ProcessLine(Txt: Text; LineCount: Integer) NewTxt: Text;
+    procedure ProcessLine(Txt: Text; LineCount: Integer; var Appsource: Boolean) NewTxt: Text;
     var
         ALObjectMigrationBuffer: Record "AL Object Migration Buffer";
         SkipLine: Boolean;
@@ -125,11 +152,11 @@ report 69000 "Migrate AL Objects"
             Clear(SkipLine);
             ALObjectMigrationBuffer.Reset();
             case true of
-                NewTxt.StartsWith('table'):
+                NewTxt.StartsWith('table '):
                     begin
                         ALObjectMigrationBuffer.SetRange("Object Type", ALObjectMigrationBuffer."Object Type"::Table);
                     end;
-                NewTxt.StartsWith('page'):
+                NewTxt.StartsWith('page '):
                     begin
                         ALObjectMigrationBuffer.SetRange("Object Type", ALObjectMigrationBuffer."Object Type"::Page);
                     end;
@@ -145,7 +172,7 @@ report 69000 "Migrate AL Objects"
                     begin
                         ALObjectMigrationBuffer.SetRange("Object Type", ALObjectMigrationBuffer."Object Type"::Query);
                     end;
-                NewTxt.StartsWith('enum'):
+                NewTxt.StartsWith('enum '):
                     begin
                         ALObjectMigrationBuffer.SetRange("Object Type", ALObjectMigrationBuffer."Object Type"::Enum);
                     end;
@@ -161,12 +188,15 @@ report 69000 "Migrate AL Objects"
                     begin
                         ALObjectMigrationBuffer.SetRange("Object Type", ALObjectMigrationBuffer."Object Type"::PageExtension);
                     end;
+                NewTxt.StartsWith('enumextension'):
+                    begin
+                        ALObjectMigrationBuffer.SetRange("Object Type", ALObjectMigrationBuffer."Object Type"::EnumExtension);
+                    end;
                 else
                     SkipLine := true;
             end;
             if not SkipLine then
-                ReplaceFromBuffer(NewTxt, ALObjectMigrationBuffer, true, true);
-
+                Appsource := ReplaceFromBuffer(NewTxt, ALObjectMigrationBuffer, true, true);
         end else begin
             //Variables
             ReplaceVariables(NewTxt, ': Record ', ALObjectMigrationBuffer."Object Type"::Table);
@@ -256,7 +286,7 @@ report 69000 "Migrate AL Objects"
         end;
     end;
 
-    procedure ReplaceFromBuffer(var NewTxt: Text; var ALObjectMigrationBuffer: Record "AL Object Migration Buffer"; ID: Boolean; Name: Boolean)
+    procedure ReplaceFromBuffer(var NewTxt: Text; var ALObjectMigrationBuffer: Record "AL Object Migration Buffer"; ID: Boolean; Name: Boolean) Appsource: Boolean
     var
         Replaced: Boolean;
     begin
@@ -267,17 +297,20 @@ report 69000 "Migrate AL Objects"
                     if NewTxt.Contains(format(ALObjectMigrationBuffer."From Object Id")) then begin
                         NewTxt := NewTxt.Replace(format(ALObjectMigrationBuffer."From Object Id"), format(ALObjectMigrationBuffer."To Object Id"));
                         Replaced := true;
+                        Appsource := ALObjectMigrationBuffer.Appsource;
                     end;
                 if Name then begin
                     if ALObjectMigrationBuffer."From Object Name".Contains(' ') then begin
                         if Replaced or NewTxt.Contains('"' + ALObjectMigrationBuffer."From Object Name" + '"') then begin
                             NewTxt := NewTxt.Replace('"' + ALObjectMigrationBuffer."From Object Name" + '"', '"' + ALObjectMigrationBuffer."To Object Name" + '"');
                             Replaced := true;
+                            Appsource := ALObjectMigrationBuffer.Appsource;
                         end
                     end else
                         if Replaced or NewTxt.Contains(ALObjectMigrationBuffer."From Object Name") then begin
                             NewTxt := NewTxt.Replace(ALObjectMigrationBuffer."From Object Name", '"' + ALObjectMigrationBuffer."To Object Name" + '"');
                             Replaced := true;
+                            Appsource := ALObjectMigrationBuffer.Appsource;
                         end;
                 end;
             until (ALObjectMigrationBuffer.Next() = 0) or Replaced;

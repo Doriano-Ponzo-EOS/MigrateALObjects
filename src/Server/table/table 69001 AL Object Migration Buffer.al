@@ -21,7 +21,6 @@ table 69001 "AL Object Migration Buffer"
         {
             DataClassification = CustomerContent;
             Caption = 'From Object ID';
-            NotBlank = true;
         }
         field(10; "From Object Name"; Text[100])
         {
@@ -33,7 +32,11 @@ table 69001 "AL Object Migration Buffer"
         {
             DataClassification = CustomerContent;
             Caption = 'To Object Name';
-            NotBlank = true;
+        }
+        field(12; "Appsource"; Boolean)
+        {
+            DataClassification = CustomerContent;
+            Caption = 'Appsource';
         }
     }
 
