@@ -201,7 +201,7 @@ page 69000 "Prepare Table Migrations"
             if TenantMedia.Get(fromAAA.Media1.MediaId) then begin
                 TenantMedia.CalcFields(Content);
                 if TenantMedia.Content.HasValue() then begin
-                    fromAAA.Blob1.CreateInStream(IStream);
+                    fromAAA.Media1.CreateInStream(IStream);
                     ToAAA.Media1.ImportStream(IStream, TenantMedia.Description, TenantMedia."Mime Type")
                 end;
             end;
